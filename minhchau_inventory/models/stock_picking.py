@@ -1,65 +1,124 @@
+# -*- coding: utf-8 -*-
+
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
+from datetime import date
+
 
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
-    def action_assign(self):
-        # 1. Chốt chặn Pop-up kiểm tra Hạn Sử Dụng (HSD) trước khi dược sĩ xử lý
-        for move in self.move_ids_without_package:
-            for line in move.move_line_ids:
-                # Odoo gốc dùng trường expiration_date để lưu ngày hết hạn của Lô thuốc
-                lot_expiry = line.lot_id.expiration_date if line.lot_id and hasattr(line.lot_id, 'expiration_date') else False
-                if lot_expiry and lot_expiry < fields.Datetime.now():
-                    raise ValidationError(_("⚠️ CHẶN: Thuốc '%s' thuộc lô '%s' đã hết hạn sử dụng!") % (line.product_id.name, line.lot_id.name))
+    def _sanity_check(self, separate_pickings=True):
+        """
+        Override _sanity_check() — chạy TRƯỚC khi Odoo kiểm tra Lot.
+        Chèn 2 chốt chặn theo BPMN Nhà thuốc Minh Châu:
+            [1] Quét lot của product → HSD hết hạn? → CHẶN
+            [2] Kiểm tra số lượng   → Không đủ?    → CHẶN
+            [3] super()._sanity_check() → Odoo kiểm tra bình thường
+        """
+        today = date.today()
 
-            # 2. Chốt chặn Pop-up kiểm tra Số lượng tồn kho (forecast_availability)
-            if move.forecast_availability < move.product_uom_qty:
-                raise ValidationError(_("⚠️ CHẶN: Thuốc '%s' không đủ số lượng tồn kho thực tế!") % move.product_id.name)
+        for picking in self:
+            if picking.picking_type_code != 'outgoing':
+                continue
 
-        return super(StockPicking, self).action_assign()
+            # Lấy Sale Order liên quan
+            sale_order = getattr(picking, 'sale_id', None)
+            so_name = sale_order.name if sale_order else None
 
+            for move in picking.move_ids:
+                product = move.product_id
 
-class StockMove(models.Model):
-    _inherit = 'stock.move'
+                # ============================================================
+                # CHỐT CHẶN 1 — Quét tất cả Lot của product trong kho
+                # ============================================================
+                lots = self.env['stock.lot'].search([
+                    ('product_id', '=', product.id),
+                    ('company_id', '=', picking.company_id.id),
+                ])
 
-    # Các trường tùy chỉnh hiển thị trạng thái và link cho Nhà thuốc Minh Châu
-    x_minhchau_status = fields.Char(string="Lý do chi tiết", compute="_compute_minhchau_status")
-    sale_order_url = fields.Char(string="Đường dẫn SO", compute="_compute_sale_order_url")
+                if lots:
+                    lots_with_stock = lots.filtered(
+                        lambda l: l.product_qty > 0
+                    )
 
-    @api.depends('state', 'product_uom_qty', 'forecast_availability', 'move_line_ids')
-    def _compute_minhchau_status(self):
-        for move in self:
-            move.x_minhchau_status = _("Đang kiểm tra...")
-            
-            has_expired_lot = False
-            for line in move.move_line_ids:
-                lot_expiry = line.lot_id.expiration_date if line.lot_id and hasattr(line.lot_id, 'expiration_date') else False
-                if lot_expiry and lot_expiry < fields.Datetime.now():
-                    has_expired_lot = True
-                    break
-            
-            if has_expired_lot:
-                move.x_minhchau_status = _("❌ LÔ THUỐC QUÁ HẠN")
-            elif move.state not in ['assigned', 'done'] and move.forecast_availability < move.product_uom_qty:
-                move.x_minhchau_status = _("⚠️ THIẾU SỐ LƯỢNG KHO")
-            elif move.state == 'assigned':
-                move.x_minhchau_status = _("✅ Sẵn sàng xuất kho")
-            elif move.state == 'done':
-                move.x_minhchau_status = _("Hoàn thành trừ kho")
-            else:
-                move.x_minhchau_status = _("Chờ xử lý")
+                    if lots_with_stock:
+                        valid_lots = lots_with_stock.filtered(
+                            lambda l: not l.expiration_date or
+                            (l.expiration_date.date()
+                             if hasattr(l.expiration_date, 'date')
+                             else l.expiration_date) >= today
+                        )
 
-    # ĐÃ SỬA: Theo dõi biến động qua 'state' để an toàn 100% khi Odoo dựng Registry khởi động
-    @api.depends('state')
-    def _compute_sale_order_url(self):
-        for move in self:
-            # Kiểm tra động xem trường sale_line_id từ module sale_stock đã được nạp thành công chưa
-            sale_line = move.sale_line_id if hasattr(move, 'sale_line_id') else False
-            sale_order = sale_line.order_id if sale_line else False
-            
-            if sale_order:
-                base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
-                move.sale_order_url = f"{base_url}/web#id={sale_order.id}&model=sale.order&view_type=form"
-            else:
-                move.sale_order_url = False
+                        expired_lots = lots_with_stock.filtered(
+                            lambda l: l.expiration_date and
+                            (l.expiration_date.date()
+                             if hasattr(l.expiration_date, 'date')
+                             else l.expiration_date) < today
+                        )
+
+                        if expired_lots and not valid_lots:
+                            exp_list = '\n'.join([
+                                '  • %s — Expired: %s' % (
+                                    l.name,
+                                    (l.expiration_date.date()
+                                     if hasattr(l.expiration_date, 'date')
+                                     else l.expiration_date
+                                    ).strftime('%d/%m/%Y')
+                                )
+                                for l in expired_lots
+                            ])
+                            msg = (
+                                "🔴 BLOCKED — ALL LOTS EXPIRED\n\n"
+                                "Product : %s\n\n"
+                                "Expired lots in stock:\n%s\n\n"
+                            ) % (product.display_name, exp_list)
+                            if so_name:
+                                msg += "➡ Please return to Sale Order %s\n" \
+                                       "  and replace with a valid product." % so_name
+                            else:
+                                msg += "➡ Please select a valid product."
+                            raise ValidationError(_(msg))
+
+                # ============================================================
+                # CHỐT CHẶN 2 — Kiểm tra số lượng tồn kho
+                # ============================================================
+                if lots:
+                    available_qty = sum(
+                        l.product_qty for l in lots.filtered(
+                            lambda l: not l.expiration_date or
+                            (l.expiration_date.date()
+                             if hasattr(l.expiration_date, 'date')
+                             else l.expiration_date) >= today
+                        )
+                    )
+                else:
+                    available_qty = product.with_context(
+                        location=picking.location_id.id
+                    ).qty_available
+
+                demand_qty = move.product_uom_qty
+
+                if available_qty < demand_qty:
+                    msg = (
+                        "🟠 BLOCKED — INSUFFICIENT QUANTITY\n\n"
+                        "Product    : %s\n"
+                        "Demand     : %s\n"
+                        "Available  : %s\n"
+                        "Shortage   : %s\n\n"
+                    ) % (
+                        product.display_name,
+                        int(demand_qty),
+                        int(available_qty),
+                        int(demand_qty - available_qty),
+                    )
+                    if so_name:
+                        msg += "➡ Please return to Sale Order %s\n" \
+                               "  and adjust the quantity accordingly." % so_name
+                    else:
+                        msg += "➡ Please adjust the quantity in the related Sale Order."
+                    raise ValidationError(_(msg))
+
+        return super(StockPicking, self)._sanity_check(
+            separate_pickings=separate_pickings
+        )
