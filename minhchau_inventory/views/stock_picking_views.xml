@@ -1,35 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!--
-        Kế thừa view form mặc định của stock.picking
-        Inject Banner Y tế vào ngay dưới thanh trạng thái (statusbar)
-        để nhắc nhở Dược sĩ kiểm tra kỹ số lượng và HSD trước khi xác nhận.
-    -->
     <record id="view_picking_form_minhchau_banner" model="ir.ui.view">
         <field name="name">stock.picking.form.minhchau.banner</field>
         <field name="model">stock.picking</field>
-
-        <!-- Kế thừa view form gốc của Odoo -->
         <field name="inherit_id" ref="stock.view_picking_form"/>
-
         <field name="arch" type="xml">
-            <!--
-                xpath: chèn banner VÀO SAU thẻ <header> (thanh trạng thái)
-                Dùng position="after" để banner nằm ngay dưới status bar,
-                trước khi hiển thị nội dung phiếu kho.
-            -->
-            <xpath expr="//header" position="after">
 
-                <!--
-                    Banner chỉ hiển thị khi phiếu là XUẤT KHO (outgoing)
-                    để không làm rối phiếu nhập kho hay điều chuyển nội bộ.
-                    attrs dùng invisible để ẩn/hiện động theo picking_type_code.
-                -->
-                div
-                    class="alert alert-success o_minhchau_hsd_banner"
-                    role="alert"
-                    invisible="picking_type_code != 'outgoing'"
-                    style="
+            <!-- Banner Y tế ngay dưới header -->
+            <xpath expr="//header" position="after">
+                <div class="alert alert-success o_minhchau_hsd_banner"
+                     role="alert"
+                     invisible="picking_type_code != 'outgoing'"
+                     style="
                         background-color: #d4edda;
                         border-color:     #28a745;
                         border-left:      5px solid #28a745;
@@ -41,27 +23,22 @@
                         gap:              10px;
                         font-size:        14px;
                         color:            #155724;
-                    "
-                >
-                    <!-- Icon Y tế -->
-                    <span style="font-size: 20px;" title="Nhắc nhở Y tế">🏥</span>
-
+                     ">
+                    <span style="font-size: 20px;">🏥</span>
                     <div>
-                        <strong>
-                            [NHÀ THUỐC MINH CHÂU] Lưu ý dành cho Dược sĩ:
-                        </strong>
+                        <strong>[MINH CHAU PHARMACY] Notice for Pharmacist: </strong>
                         <span>
-                            Vui lòng kiểm tra kỹ
-                            <strong>Số lượng</strong> và
-                            <strong>Hạn Sử Dụng (HSD)</strong>
-                            của từng lô thuốc trước khi bấm
-                            <strong>"Xác nhận"</strong>.
-                            Hệ thống sẽ tự động chặn nếu phát hiện lô thuốc hết hạn.
+                            Please carefully verify the
+                            <strong>Quantity</strong> and
+                            <strong>Expiration Date</strong>
+                            of each lot before clicking
+                            <strong>"Validate"</strong>.
+                            The system will automatically block expired or insufficient stock.
                         </span>
                     </div>
                 </div>
-
             </xpath>
+
         </field>
     </record>
 </odoo>
