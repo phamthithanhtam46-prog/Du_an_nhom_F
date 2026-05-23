@@ -13,8 +13,9 @@
     'author': 'Nhóm F - Tam_Inventory',
     'category': 'Inventory',
     'depends': [
-        'stock',          # Phân hệ Kho cốt lõi của Odoo
-        'product',        # Quản lý sản phẩm / thuốc
+        'stock',            # Phân hệ Kho cốt lõi của Odoo
+        'product',          # Quản lý sản phẩm / thuốc
+        'sale_stock',       # BẮT BUỘC: Để lấy được thông tin Đơn bán hàng (SO) từ phiếu kho
     ],
     'data': [
         'views/stock_picking_views.xml',

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
     <record id="view_picking_form_minhchau_inherit" model="ir.ui.view">
         <name>stock.picking.form.minhchau.inherit</name>
         <model>stock.picking</model>
@@ -7,7 +8,7 @@
         <arch type="xml">
             
             <xpath expr="//header" position="after">
-                <div class="alert alert-success text-center font-weight-bold" role="alert" style="margin-bottom:10px; background-color: #e2f0d9; color: #2e7d32;">
+                <div class="alert alert-success text-center font-weight-bold" role="alert" style="margin-bottom: 10px; background-color: #e2f0d9; color: #2e7d32;">
                     🌿 [MINH CHAU PHARMACY] Hệ thống tự động phân tích chi tiết nguyên nhân lỗi ở bảng danh sách thuốc phía dưới. Vui lòng theo dõi cột "Tình trạng thực tế".
                 </div>
             </xpath>
@@ -17,17 +18,14 @@
             </xpath>
 
             <xpath expr="//field[@name='move_ids_without_package']/tree/field[@name='product_uom']" position="after">
-                <field name="x_minhchau_status" string="Tình trạng thực tế" 
-                       style="font-weight: bold; color: #dc3545;"/>
+                <field name="x_minhchau_status" string="Tình trạng thực tế" style="font-weight: bold; color: #dc3545;"/>
             </xpath>
 
             <xpath expr="//field[@name='move_ids_without_package']/tree/field[@name='x_minhchau_status']" position="after">
-                <field name="sale_order_url" widget="url" text="🔗 Đi tới SO để sửa đơn" 
-                       attrs="{'invisible': [('state', '=', 'assigned')]}"
-                       string="Hành động sửa lỗi"
-                       style="font-weight: bold; color: #0056b3;"/>
+                <field name="sale_order_url" widget="url" text="🔗 Đi tới SO để sửa đơn" string="Hành động sửa lỗi" style="font-weight: bold; color: #0056b3;"/>
             </xpath>
 
         </arch>
     </record>
+
 </odoo>
