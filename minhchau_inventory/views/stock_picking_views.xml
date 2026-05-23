@@ -25,10 +25,10 @@
                     để không làm rối phiếu nhập kho hay điều chuyển nội bộ.
                     attrs dùng invisible để ẩn/hiện động theo picking_type_code.
                 -->
-                <div
+                div
                     class="alert alert-success o_minhchau_hsd_banner"
                     role="alert"
-                    attrs="{'invisible': [('picking_type_code', '!=', 'outgoing')]}"
+                    invisible="picking_type_code != 'outgoing'"
                     style="
                         background-color: #d4edda;
                         border-color:     #28a745;
