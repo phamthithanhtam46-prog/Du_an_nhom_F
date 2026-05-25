@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="product_rx_button"
+              inherit_id="website_sale.product"
+              name="Pharmacy Rx Product Button">
+
+        <xpath expr="//a[@id='add_to_cart']" position="replace">
+
+            <t t-if="product.prescription_required">
+                <a t-att-href="'/pharmacy/consultation?product_id=%s' % product.id"
+                   class="btn btn-danger btn-lg">
+                    Gửi yêu cầu tư vấn
+                </a>
+            </t>
+
+            <t t-else="">
+                <a id="add_to_cart"
+                   role="button"
+                   class="btn btn-primary btn-lg js_check_product a-submit"
+                   href="#">
+                    Thêm vào giỏ hàng
+                </a>
+            </t>
+
+        </xpath>
+
+    </template>
+    <template id="pharmacy_consultation_form" name="Form tư vấn thuốc kê đơn">
+    <t t-call="website.layout">
+        <div class="container my-5">
+            <h2>Gửi yêu cầu tư vấn</h2>
+            <p class="text-muted">
+                Vui lòng điền thông tin bên dưới để dược sĩ nhà thuốc Minh Châu liên hệ tư vấn.
+            </p>
+
+            <form action="/pharmacy/consultation/submit"
+                  method="post"
+                  class="mt-4">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <input type="hidden" name="product_id" t-att-value="product.id if product else ''"/>
+
+                <div class="mb-3">
+                    <label class="form-label">Tên thuốc</label>
+                    <input type="text"
+                           class="form-control"
+                           name="product_name"
+                           t-att-value="product.name if product else ''"
+                           readonly="readonly"/>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Họ và tên</label>
+                    <input type="text" class="form-control" name="customer_name" required="required"/>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Số điện thoại</label>
+                    <input type="text" class="form-control" name="phone" required="required"/>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" name="email"/>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Nội dung cần tư vấn</label>
+                    <textarea class="form-control" name="note" rows="4"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Gửi yêu cầu
+                </button>
+            </form>
+        </div>
+    </t>
+    </template>
+    <template id="product_rx_badge"
+            inherit_id="website_sale.product"
+            name="Rx Product Badge">
+
+        <xpath expr="//h1[@itemprop='name']" position="after">
+            <t t-if="product.prescription_required">
+                <div class="mt-2 mb-3">
+                    <span class="badge bg-danger">
+                        Thuốc kê đơn
+                    </span>
+                </div>
+            </t>
+        </xpath>
+    </template>
+    <template id="products_item_rx_badge"
+            inherit_id="website_sale.products_item"
+            name="Rx Badge Shop Grid">
+
+        <xpath expr="//div[contains(@class, 'o_wsale_product_information_text')]" position="inside">
+
+            <t t-if="product.prescription_required">
+                <div class="mt-1">
+                    <span class="badge bg-danger">
+                        Thuốc kê đơn
+                    </span>
+                </div>
+            </t>
+
+        </xpath>
+    </template>
+</odoo>
