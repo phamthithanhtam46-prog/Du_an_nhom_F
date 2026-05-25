@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_prescription_tree_module_6" model="ir.ui.view">
+        <field name="name">pharmacy.prescription.tree.module.6</field>
+        <field name="model">pharmacy.prescription</field>
+        <field name="arch" type="xml">
+            <tree string="Đơn thuốc kê đơn">
+                <field name="name"/>
+                <field name="customer_name"/>
+                <field name="phone"/>
+                <field name="state"/>
+                <field name="prescription_date"/>
+                <field name="sale_order_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_prescription_form_module_6" model="ir.ui.view">
+        <field name="name">pharmacy.prescription.form.module.6</field>
+        <field name="model">pharmacy.prescription</field>
+        <field name="arch" type="xml">
+            <form string="Đơn thuốc kê đơn">
+                <header>
+                    <button name="action_confirm" type="object" string="Duyệt và tạo đơn bán" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_reject" type="object" string="Từ chối" class="btn-secondary" invisible="state != 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,rejected"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group string="Thông tin khách hàng">
+                        <group>
+                            <field name="customer_name" readonly="state == 'confirmed'"/>
+                            <field name="phone" readonly="state == 'confirmed'"/>
+                            <field name="birth_date" readonly="state == 'confirmed'"/>
+                            <field name="gender" readonly="state == 'confirmed'"/>
+                        </group>
+                        <group>
+                            <field name="weight" readonly="state == 'confirmed'"/>
+                            <field name="prescription_date" readonly="state == 'confirmed'"/>
+                            <field name="is_child" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Thông tin đơn thuốc">
+                        <group>
+                            <field name="doctor_name" readonly="state == 'confirmed'"/>
+                            <field name="doctor_license" readonly="state == 'confirmed'"/>
+                            <field name="medical_facility" readonly="state == 'confirmed'"/>
+                        </group>
+                        <group>
+                            <field name="guardian_name" readonly="state == 'confirmed'"/>
+                            <field name="guardian_document" readonly="state == 'confirmed'"/>
+                        </group>
+                    </group>
+                    <group string="Cảnh báo sức khỏe">
+                        <group>
+                            <field name="has_pregnancy" readonly="state == 'confirmed'"/>
+                            <field name="has_kidney_disease" readonly="state == 'confirmed'"/>
+                            <field name="has_hypertension" readonly="state == 'confirmed'"/>
+                        </group>
+                        <group>
+                            <field name="other_conditions" readonly="state == 'confirmed'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Danh sách thuốc">
+                            <field name="line_ids" readonly="state == 'confirmed'">
+                                <tree editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="product_code" readonly="1"/>
+                                    <field name="medicine_name" readonly="1"/>
+                                    <field name="drug_group_id" readonly="1"/>
+                                    <field name="quantity"/>
+                                    <field name="uom_id" readonly="1"/>
+                                    <field name="original_medicine_name"/>
+                                    <field name="dosage"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Hình ảnh đơn thuốc">
+                            <group>
+                                <field name="prescription_image" widget="image" filename="prescription_image_filename" readonly="state == 'confirmed'"/>
+                                <field name="prescription_image_filename" invisible="1"/>
+                            </group>
+                        </page>
+                        <page string="Ghi chú">
+                            <field name="note" nolabel="1" placeholder="Nhập ghi chú hoặc yêu cầu tư vấn..." readonly="state == 'confirmed'"/>
+                        </page>
+                        <page string="Kết quả xử lý">
+                            <group>
+                                <field name="pharmacist_id" readonly="1"/>
+                                <field name="sale_order_id" readonly="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pharmacy_prescription" model="ir.actions.act_window">
+        <field name="name">Đơn thuốc kê đơn</field>
+        <field name="res_model">pharmacy.prescription</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help">Quản lý đơn thuốc kê đơn và tạo đơn bán hàng.</field>
+    </record>
+</odoo>
