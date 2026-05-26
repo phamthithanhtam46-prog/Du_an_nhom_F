@@ -1,121 +1,131 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api, _
-import logging
-
-_logger = logging.getLogger(__name__)
+from odoo import models, fields, _
 
 
-class StockPicking(models.Model):
+class MinhChauStockPicking(models.Model):
     _inherit = 'stock.picking'
 
-    def _check_minhchau_errors(self):
-        now = fields.Datetime.now()
-        expired_lines = []
-        insufficient_lines = []
+    def _check_immediate(self):
+        normal = self.filtered(lambda p: p.picking_type_code != 'outgoing')
+        if normal:
+            return super(MinhChauStockPicking, normal)._check_immediate()
+        return False
 
-        for move in self.move_ids.filtered(lambda m: m.state not in ('done', 'cancel')):
-            product = move.product_id
-            qty_demand = move.product_uom_qty
-
-            # ── KIỂM TRA HẠN SỬ DỤNG ──────────────────────────────────────────
-            # Chỉ kiểm tra sản phẩm có tracking theo lot/serial
-            if product.tracking and product.tracking != 'none':
-
-                # Ưu tiên 1: kiểm tra lot đã được chỉ định trong move line
-                if move.move_line_ids:
-                    for ml in move.move_line_ids:
-                        lot = ml.lot_id
-                        if lot and lot.expiration_date and lot.expiration_date < now:
-                            expired_lines.append(
-                                f"• {product.display_name} | Lot: {lot.name} | HSD: "
-                                f"{lot.expiration_date.strftime('%d/%m/%Y')}"
-                            )
-
-                else:
-                    # Ưu tiên 2: chưa chọn lot → kiểm tra lot khả dụng trong kho
-                    quants = self.env['stock.quant'].search([
-                        ('product_id', '=', product.id),
-                        ('location_id', 'child_of', self.location_id.id),
-                        ('quantity', '>', 0),
-                    ])
-                    lots_in_stock = quants.mapped('lot_id').filtered(lambda l: l)
-
-                    if lots_in_stock:
-                        # Nếu TẤT CẢ lot trong kho đều đã hết hạn → cảnh báo
-                        all_expired = all(
-                            l.expiration_date and l.expiration_date < now
-                            for l in lots_in_stock
-                        )
-                        if all_expired:
-                            for lot in lots_in_stock:
-                                expired_lines.append(
-                                    f"• {product.display_name} | Lot: {lot.name} | HSD: "
-                                    f"{lot.expiration_date.strftime('%d/%m/%Y') if lot.expiration_date else 'N/A'}"
-                                )
-
-            # ── KIỂM TRA SỐ LƯỢNG TỒN KHO ────────────────────────────────────
-            qty_available = product.with_context(
-                location=self.location_id.id
-            ).qty_available
-
-            if qty_available < qty_demand:
-                insufficient_lines.append(
-                    f"• {product.display_name} | Yêu cầu: {qty_demand} | Tồn kho: {qty_available}"
-                )
-
-        # ── TẠO WIZARD THEO THỨ TỰ ƯU TIÊN ──────────────────────────────────
-        # Hết hạn ưu tiên hơn thiếu số lượng
-        if expired_lines:
-            return self._create_error_wizard(
-                title='❌ THUỐC ĐÃ HẾT HẠN SỬ DỤNG',
-                error_type='expired',
-                message="THUỐC ĐÃ HẾT HẠN SỬ DỤNG\n\n" + "\n".join(expired_lines),
-                window_title='Lỗi: Thuốc Hết Hạn Sử Dụng',
-            )
-
-        if insufficient_lines:
-            return self._create_error_wizard(
-                title='❌ KHÔNG ĐỦ SỐ LƯỢNG TỒN KHO',
-                error_type='insufficient',
-                message="KHÔNG ĐỦ SỐ LƯỢNG TỒN KHO\n\n" + "\n".join(insufficient_lines),
-                window_title='Lỗi: Không Đủ Tồn Kho',
-            )
-
-        return None
-
-    def _create_error_wizard(self, title, error_type, message, window_title):
-        sale_order = self.sale_id
-        wizard = self.env['minhchau.stock.error.wizard'].create({
-            'title': title,
-            'error_type': error_type,
-            'message': message,
-            'picking_id': self.id,
-            'sale_order_id': sale_order.id if sale_order else False,
-        })
-        return {
-            'type': 'ir.actions.act_window',
-            'name': window_title,
-            'res_model': 'minhchau.stock.error.wizard',
-            'res_id': wizard.id,
-            'view_mode': 'form',
-            'target': 'new',
-        }
+    def _pre_action_sanity_check(self):
+        normal = self.filtered(lambda p: p.picking_type_code != 'outgoing')
+        if normal:
+            return super(MinhChauStockPicking, normal)._pre_action_sanity_check()
+        return True
 
     def button_validate(self):
-        self.ensure_one()
-
-        if self.picking_type_code != 'outgoing':
-            return super().button_validate()
-
         if self.env.context.get('skip_minhchau_check'):
             return super().button_validate()
 
-        error_action = self._check_minhchau_errors()
-        if error_action:
-            return error_action
+        for picking in self:
+            if picking.picking_type_code != 'outgoing':
+                continue
 
-        return super(StockPicking, self.with_context(
-            skip_sanity_check=True,
-            skip_backorder=True,
-            skip_sms=True,
-        )).button_validate()
+            now = fields.Datetime.now()
+
+            # ── Dữ liệu hết hạn (lấy dòng đầu tiên) ──
+            expired_info     = None   # dict: product_name, lot_name, expiry_date
+            # ── Dữ liệu thiếu kho (lấy dòng đầu tiên) ──
+            insufficient_info = None  # dict: product_name, qty_demand, qty_available, qty_shortage
+
+            for move in picking.move_ids.filtered(lambda m: m.state not in ('done', 'cancel')):
+                product = move.product_id
+
+                # ── Kiểm tra hết hạn ──
+                if expired_info is None and product.tracking and product.tracking != 'none':
+                    for ml in move.move_line_ids:
+                        if ml.lot_id and ml.lot_id.expiration_date:
+                            if ml.lot_id.expiration_date < now:
+                                expired_info = {
+                                    'product_name': product.name,
+                                    'lot_name':     ml.lot_id.name,
+                                    'expiry_date':  ml.lot_id.expiration_date.strftime('%d/%m/%Y'),
+                                }
+                                break
+                    if expired_info is None and not move.move_line_ids:
+                        quants = self.env['stock.quant'].search([
+                            ('product_id',   '=', product.id),
+                            ('location_id',  'child_of', picking.location_id.id),
+                            ('quantity',     '>',  0),
+                        ])
+                        for q in quants:
+                            if q.lot_id and q.lot_id.expiration_date and q.lot_id.expiration_date < now:
+                                expired_info = {
+                                    'product_name': product.name,
+                                    'lot_name':     q.lot_id.name,
+                                    'expiry_date':  q.lot_id.expiration_date.strftime('%d/%m/%Y'),
+                                }
+                                break
+
+                # ── Kiểm tra thiếu tồn kho ──
+                if insufficient_info is None:
+                    qty_avail = product.with_context(location=picking.location_id.id).qty_available
+                    if qty_avail < move.product_uom_qty:
+                        shortage = move.product_uom_qty - qty_avail
+                        insufficient_info = {
+                            'product_name':  product.name,
+                            'qty_demand':    f'{move.product_uom_qty:.1f}',
+                            'qty_available': f'{qty_avail:.1f}',
+                            'qty_shortage':  f'{shortage:.1f}',
+                        }
+
+            if not expired_info and not insufficient_info:
+                continue
+
+            # ── Xác định error_type ──
+            if expired_info and insufficient_info:
+                error_type = 'both'
+            elif expired_info:
+                error_type = 'expired'
+            else:
+                error_type = 'insufficient'
+
+            sale_order = getattr(picking, 'sale_id', False)
+
+            # ── Tạo wizard với các field tách biệt ──
+            vals = {
+                'error_type':  error_type,
+                'picking_id':  picking.id,
+                'sale_order_id': sale_order.id if sale_order else False,
+            }
+
+            if expired_info:
+                vals.update({
+                    'product_name': expired_info['product_name'],
+                    'lot_name':     expired_info['lot_name'],
+                    'expiry_date':  expired_info['expiry_date'],
+                    # legacy
+                    'title':   expired_info['product_name'],
+                    'message': f"Lot: {expired_info['lot_name']} · HSD: {expired_info['expiry_date']}",
+                })
+            else:
+                vals.update({
+                    'product_name':  insufficient_info['product_name'],
+                    'qty_demand':    insufficient_info['qty_demand'],
+                    'qty_available': insufficient_info['qty_available'],
+                    'qty_shortage':  insufficient_info['qty_shortage'],
+                    # legacy
+                    'title':   insufficient_info['product_name'],
+                    'message': (
+                        f"Yêu cầu: {insufficient_info['qty_demand']} · "
+                        f"Tồn kho: {insufficient_info['qty_available']} · "
+                        f"Thiếu: {insufficient_info['qty_shortage']}"
+                    ),
+                })
+
+            wizard = self.env['minhchau.stock.error.wizard'].create(vals)
+
+            return {
+                'type': 'ir.actions.act_window',
+                'res_model': 'minhchau.stock.error.wizard',
+                'res_id': wizard.id,
+                'view_mode': 'form',
+                'target': 'new',
+                'name': 'Lỗi Xuất Kho',
+            }
+
+        return super().button_validate()

@@ -1,104 +1,208 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="view_minhchau_stock_error_wizard" model="ir.ui.view">
+    <record id="view_minhchau_stock_error_wizard_form" model="ir.ui.view">
         <field name="name">minhchau.stock.error.wizard.form</field>
         <field name="model">minhchau.stock.error.wizard</field>
         <field name="arch" type="xml">
-            <form string="Stock Validation Error">
-                <sheet>
+            <form string="Thông Báo Lỗi Xuất Kho">
+                <style>
+                    /* ── Card wrapper ── */
+                    .mc-card {
+                        background: #ffffff;
+                        border-radius: 14px;
+                        overflow: hidden;
+                        margin: 4px 0 8px;
+                        box-shadow: 0 2px 12px rgba(0,0,0,.07);
+                        border: 1.5px solid transparent;
+                    }
+                    .mc-card-red   { border-color: #fde8e8; border-left: 5px solid #e8404a; }
+                    .mc-card-amber { border-color: #fff0d6; border-left: 5px solid #f5a623; }
 
-                    <!-- Tiêu đề đỏ -->
-                    <div style="
-                        background: #fff5f5;
-                        border-left: 5px solid #dc3545;
-                        border-radius: 6px;
-                        padding: 12px 16px;
-                        margin-bottom: 16px;
-                    ">
-                        <field name="title" readonly="1"
-                               style="font-size: 14px; font-weight: bold; color: #dc3545; text-transform: uppercase;"/>
+                    /* ── Header ── */
+                    .mc-header {
+                        display: flex;
+                        align-items: flex-start;
+                        gap: 14px;
+                        padding: 18px 20px 14px 18px;
+                    }
+                    .mc-icon {
+                        width: 40px; height: 40px;
+                        border-radius: 10px;
+                        display: flex; align-items: center; justify-content: center;
+                        font-size: 19px; flex-shrink: 0;
+                    }
+                    .mc-icon-red   { background: #fdeaea; }
+                    .mc-icon-amber { background: #fff3dc; }
+
+                    .mc-title-block h3 {
+                        font-size: 15px; font-weight: 700;
+                        color: #1a1d2e; margin: 0 0 3px;
+                    }
+                    .mc-title-block p {
+                        font-size: 12px; color: #9ca3af; margin: 0;
+                    }
+
+                    /* ── Tag row ── */
+                    .mc-tags {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 8px;
+                        padding: 0 18px 18px 18px;
+                    }
+
+                    /* ── Individual chip/tag ── */
+                    .mc-tag {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 4px;
+                        padding: 5px 11px;
+                        border-radius: 20px;
+                        font-size: 12.5px;
+                        font-weight: 600;
+                        white-space: nowrap;
+                    }
+                    .mc-tag-lbl { font-weight: 400; color: #7a8099; margin-right: 1px; }
+
+                    /* neutral grey */
+                    .mc-tag-n {
+                        background: #f2f3f7;
+                        color: #3a3f55;
+                    }
+                    /* red — hết hạn / tồn kho thấp */
+                    .mc-tag-r {
+                        background: #fff0f0;
+                        border: 1.5px solid #f7c5c5;
+                        color: #c0392b;
+                    }
+                    .mc-tag-r .mc-tag-lbl { color: #c0392b; }
+
+                    /* amber — thiếu */
+                    .mc-tag-a {
+                        background: #fff4e0;
+                        border: 1.5px solid #f5d08a;
+                        color: #b36200;
+                    }
+                    .mc-tag-a .mc-tag-lbl { color: #b36200; }
+
+                    /* ── Buttons ── */
+                    .mc-btn-so {
+                        background: #4a3568 !important; color: #fff !important;
+                        border: none !important; border-radius: 10px !important;
+                        font-size: 13px !important; font-weight: 600 !important;
+                        padding: 9px 18px !important;
+                    }
+                    .mc-btn-confirm {
+                        background: #f5a623 !important; color: #fff !important;
+                        border: none !important; border-radius: 10px !important;
+                        font-size: 13px !important; font-weight: 600 !important;
+                        padding: 9px 18px !important;
+                    }
+                </style>
+
+                <!-- ══════════════════════════════════════
+                     POPUP 1 — HẾT HẠN SỬ DỤNG
+                ══════════════════════════════════════ -->
+                <div class="mc-card mc-card-red"
+                     invisible="error_type not in ['expired', 'both']">
+
+                    <div class="mc-header">
+                        <div class="mc-icon mc-icon-red">🚫</div>
+                        <div class="mc-title-block">
+                            <h3>Thuốc Hết Hạn Sử Dụng</h3>
+                            <p>
+                                <field name="picking_id" readonly="1" nolabel="1"/>
+                                · Lệnh giao hàng
+                            </p>
+                        </div>
                     </div>
 
-                    <!-- Chi tiết lỗi - nền vàng -->
-                    <div style="
-                        background: #fff3cd;
-                        border-left: 5px solid #ffc107;
-                        border-radius: 6px;
-                        padding: 12px 16px;
-                        margin-bottom: 16px;
-                        white-space: pre-wrap;
-                        font-family: monospace;
-                        font-size: 13px;
-                    ">
-                        <field name="message" readonly="1" widget="text"/>
+                    <div class="mc-tags">
+                        <!-- Sản phẩm -->
+                        <span class="mc-tag mc-tag-n">
+                            🏷️ <span class="mc-tag-lbl">Sản phẩm:</span>
+                            <field name="product_name" readonly="1" nolabel="1"/>
+                        </span>
+                        <!-- Lot -->
+                        <span class="mc-tag mc-tag-n">
+                            <span class="mc-tag-lbl">Lot:</span>
+                            <field name="lot_name" readonly="1" nolabel="1"/>
+                        </span>
+                        <!-- HSD — màu đỏ -->
+                        <span class="mc-tag mc-tag-r">
+                            <span class="mc-tag-lbl">HSD:</span>
+                            <field name="expiry_date" readonly="1" nolabel="1"/>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════
+                     POPUP 2 — KHÔNG ĐỦ TỒN KHO
+                ══════════════════════════════════════ -->
+                <div class="mc-card mc-card-amber"
+                     invisible="error_type != 'insufficient'">
+
+                    <div class="mc-header">
+                        <div class="mc-icon mc-icon-amber">⚠️</div>
+                        <div class="mc-title-block">
+                            <h3>Không Đủ Số Lượng Tồn Kho</h3>
+                            <p>
+                                <field name="picking_id" readonly="1" nolabel="1"/>
+                                · Lệnh giao hàng
+                            </p>
+                        </div>
                     </div>
 
-                    <!-- Hướng dẫn khi có SO - nền xanh lá -->
-                    <div invisible="not sale_order_id" style="
-                        background: #d4edda;
-                        border-left: 5px solid #28a745;
-                        border-radius: 6px;
-                        padding: 10px 16px;
-                        margin-bottom: 12px;
-                        font-size: 13px;
-                        color: #155724;
-                    ">
-                        💡 Nhấn <strong>"Đổi Sản Phẩm"</strong> để tự động set số lượng = 0
-                        cho sản phẩm lỗi và mở SO để thêm sản phẩm thay thế.
+                    <div class="mc-tags">
+                        <!-- Sản phẩm -->
+                        <span class="mc-tag mc-tag-n">
+                            🏷️ <span class="mc-tag-lbl">Sản phẩm:</span>
+                            <field name="product_name" readonly="1" nolabel="1"/>
+                        </span>
+                        <!-- Yêu cầu — neutral -->
+                        <span class="mc-tag mc-tag-n">
+                            <span class="mc-tag-lbl">Yêu cầu:</span>
+                            <field name="qty_demand" readonly="1" nolabel="1"/>
+                        </span>
+                        <!-- Tồn kho — đỏ -->
+                        <span class="mc-tag mc-tag-r">
+                            <span class="mc-tag-lbl">Tồn kho:</span>
+                            <field name="qty_available" readonly="1" nolabel="1"/>
+                        </span>
+                        <!-- Thiếu — amber -->
+                        <span class="mc-tag mc-tag-a">
+                            <span class="mc-tag-lbl">Thiếu:</span>
+                            <field name="qty_shortage" readonly="1" nolabel="1"/>
+                        </span>
                     </div>
+                </div>
 
-                    <!-- Link Sale Order - nền xanh dương -->
-                    <div invisible="not sale_order_id" style="
-                        background: #d1ecf1;
-                        border-left: 5px solid #17a2b8;
-                        border-radius: 6px;
-                        padding: 10px 16px;
-                        font-size: 13px;
-                    ">
-                        🔗 Linked Sale Order:
-                        <strong><field name="sale_order_name" readonly="1"/></strong>
-                    </div>
-
-                    <!-- Fields ẩn -->
-                    <field name="picking_id" invisible="1"/>
-                    <field name="sale_order_id" invisible="1"/>
-                    <field name="error_type" invisible="1"/>
-
-                </sheet>
-
+                <!-- ══════════════════════════════════════
+                     FOOTER BUTTONS
+                ══════════════════════════════════════ -->
                 <footer>
-                    <!--
-                        Đổi Sản Phẩm: set qty=0 dòng lỗi + mở SO để thêm sản phẩm mới.
-                        Hiện khi có SO liên kết.
-                    -->
+                    <!-- Hết hạn: chỉ Go to Sale Order -->
                     <button name="action_replace_products"
-                            string="🔄 Đổi Sản Phẩm"
                             type="object"
-                            class="btn-primary"
-                            invisible="not sale_order_id"
-                            confirm="Hệ thống sẽ tự động set số lượng = 0 cho sản phẩm lỗi. Bạn có muốn tiếp tục?"/>
+                            class="btn mc-btn-so"
+                            invisible="error_type not in ['expired', 'both']">
+                        🔗 Go to Sale Order · <field name="sale_order_name" readonly="1" nolabel="1"/>
+                    </button>
 
-                    <!-- Vẫn Xác Nhận: chỉ khi thiếu số lượng, không có hết hạn -->
+                    <!-- Thiếu hàng: Vẫn Xác Nhận + Go to SO -->
                     <button name="action_validate_anyway"
-                            string="Vẫn Xác Nhận"
                             type="object"
-                            class="btn-warning"
-                            invisible="error_type != 'insufficient'"
-                            confirm="Số lượng tồn kho không đủ. Bạn có chắc muốn tiếp tục xác nhận?"/>
-
-                    <!-- Go to Sale Order (thủ công) -->
-                    <button name="action_go_to_sale_order"
-                            string="🔗 Go to Sale Order"
+                            class="btn mc-btn-confirm"
+                            invisible="error_type != 'insufficient'">
+                        ✔ Vẫn Xác Nhận
+                    </button>
+                    <button name="action_replace_products"
                             type="object"
-                            class="btn-secondary"
-                            invisible="not sale_order_id"/>
-
-                    <!-- Đóng -->
-                    <button name="action_close"
-                            string="Đóng"
-                            type="object"
-                            class="btn-secondary"/>
+                            class="btn mc-btn-so"
+                            invisible="error_type != 'insufficient'">
+                        🔗 Go to Sale Order · <field name="sale_order_name" readonly="1" nolabel="1"/>
+                    </button>
                 </footer>
+
             </form>
         </field>
     </record>
