@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_product_template_form_pharma" model="ir.ui.view">
+        <field name="name">product.template.form.pharma</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_policy']" position="after">
+
+                <field name="pharma_product_type"/>
+
+                <field name="active_ingredients"/>
+
+                <field name="pharma_note"/>
+
+                <field name="contraindicated_pregnancy"/>
+
+                <field name="contraindicated_kidney"/>
+
+                <field name="contraindicated_hypertension"/>
+
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
