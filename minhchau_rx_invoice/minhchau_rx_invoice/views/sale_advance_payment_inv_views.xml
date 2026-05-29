@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sale_advance_payment_inv_inherit_rx" model="ir.ui.view">
+        <field name="name">sale.advance.payment.inv.inherit.rx</field>
+        <field name="model">sale.advance.payment.inv</field>
+        <field name="inherit_id" ref="sale.view_sale_advance_payment_inv"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group" position="after">
+                <group string="Xác nhận Đơn thuốc (Rx)" name="rx_confirmation">
+                    <field name="is_rx_prescription" widget="radio" options="{'horizontal': true}"/>
+                    <field name="rx_pharmacist_id" invisible="is_rx_prescription != 'yes'" required="is_rx_prescription == 'yes'"/>
+                    <field name="is_rx_confirmed" invisible="is_rx_prescription != 'yes'"/>
+                    <field name="rx_confirmation_note" invisible="is_rx_prescription != 'yes'"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
