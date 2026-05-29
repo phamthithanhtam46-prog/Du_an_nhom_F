@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_product_template_form_module_6" model="ir.ui.view">
+        <field name="name">product.template.form.module.6</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/sheet/notebook" position="inside">
+                <page name="pharmacy_information" string="Thông tin dược phẩm">
+                    <group>
+                        <group string="Phân loại dược phẩm">
+                            <field name="pharma_product_type"/>
+                            <field name="active_ingredients"/>
+                        </group>
+                        <group string="Lưu ý nội bộ">
+                            <field name="pharma_note" placeholder="Ví dụ: Chỉ bán khi có đơn thuốc, cần tư vấn liều dùng trước khi bán..."/>
+                        </group>
+                    </group>
+                    <group string="Chống chỉ định">
+                        <field name="contraindicated_pregnancy"/>
+                        <field name="contraindicated_kidney"/>
+                        <field name="contraindicated_hypertension"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

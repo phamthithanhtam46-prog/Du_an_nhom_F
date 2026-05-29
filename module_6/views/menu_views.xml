@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_pharmacy_prescription"
+              name="Đơn thuốc kê đơn"
+              parent="sale.sale_order_menu"
+              action="action_pharmacy_prescription"
+              sequence="99"/>
+</odoo>

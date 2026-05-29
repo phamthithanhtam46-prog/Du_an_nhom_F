@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_picking_form_inherited" model="ir.ui.view">
+        <field name="name">minhchau.stock.picking.form</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Banner nhắc nhở Dược sĩ -->
+            <xpath expr="//div[@name='button_box']" position="before">
+                <div invisible="picking_type_code != 'outgoing' or state not in ('assigned', 'waiting', 'confirmed')"
+                     class="alert alert-success"
+                     role="alert">
+                    🏥 <strong>Nhà thuốc Minh Châu</strong> — Vui lòng kiểm tra thuốc và hạn sử dụng trước khi xuất kho!
+                </div>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

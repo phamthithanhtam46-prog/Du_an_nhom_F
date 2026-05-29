@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pharmacy_prescription_user,access.pharmacy.prescription.user,model_pharmacy_prescription,base.group_user,1,1,1,0
+access_pharmacy_prescription_pharmacist,access.pharmacy.prescription.pharmacist,model_pharmacy_prescription,module_6.group_pharmacy_pharmacist,1,1,1,1
+access_pharmacy_prescription_line_user,access.pharmacy.prescription.line.user,model_pharmacy_prescription_line,base.group_user,1,1,1,0
+access_pharmacy_prescription_line_pharmacist,access.pharmacy.prescription.line.pharmacist,model_pharmacy_prescription_line,module_6.group_pharmacy_pharmacist,1,1,1,1
+access_pharmacy_prescription_customer_wizard_user,access.pharmacy.prescription.customer.wizard.user,model_pharmacy_prescription_customer_wizard,base.group_user,1,1,1,1
