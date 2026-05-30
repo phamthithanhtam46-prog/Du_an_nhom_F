@@ -5,6 +5,10 @@
         <field name="model">minhchau.stock.error.wizard</field>
         <field name="arch" type="xml">
             <form string="Thông Báo Lỗi Xuất Kho">
+
+                <!-- FIX: khai báo error_type để Odoo 17 nhận modifier invisible -->
+                <field name="error_type" invisible="1"/>
+
                 <style>
                     /* ── Card wrapper ── */
                     .mc-card {
@@ -117,17 +121,14 @@
                     </div>
 
                     <div class="mc-tags">
-                        <!-- Sản phẩm -->
                         <span class="mc-tag mc-tag-n">
                             🏷️ <span class="mc-tag-lbl">Sản phẩm:</span>
                             <field name="product_name" readonly="1" nolabel="1"/>
                         </span>
-                        <!-- Lot -->
                         <span class="mc-tag mc-tag-n">
                             <span class="mc-tag-lbl">Lot:</span>
                             <field name="lot_name" readonly="1" nolabel="1"/>
                         </span>
-                        <!-- HSD — màu đỏ -->
                         <span class="mc-tag mc-tag-r">
                             <span class="mc-tag-lbl">HSD:</span>
                             <field name="expiry_date" readonly="1" nolabel="1"/>
@@ -153,22 +154,18 @@
                     </div>
 
                     <div class="mc-tags">
-                        <!-- Sản phẩm -->
                         <span class="mc-tag mc-tag-n">
                             🏷️ <span class="mc-tag-lbl">Sản phẩm:</span>
                             <field name="product_name" readonly="1" nolabel="1"/>
                         </span>
-                        <!-- Yêu cầu — neutral -->
                         <span class="mc-tag mc-tag-n">
                             <span class="mc-tag-lbl">Yêu cầu:</span>
                             <field name="qty_demand" readonly="1" nolabel="1"/>
                         </span>
-                        <!-- Tồn kho — đỏ -->
                         <span class="mc-tag mc-tag-r">
                             <span class="mc-tag-lbl">Tồn kho:</span>
                             <field name="qty_available" readonly="1" nolabel="1"/>
                         </span>
-                        <!-- Thiếu — amber -->
                         <span class="mc-tag mc-tag-a">
                             <span class="mc-tag-lbl">Thiếu:</span>
                             <field name="qty_shortage" readonly="1" nolabel="1"/>
@@ -180,7 +177,6 @@
                      FOOTER BUTTONS
                 ══════════════════════════════════════ -->
                 <footer>
-                    <!-- Hết hạn: chỉ Go to Sale Order -->
                     <button name="action_replace_products"
                             type="object"
                             class="btn mc-btn-so"
@@ -188,7 +184,6 @@
                         🔗 Go to Sale Order · <field name="sale_order_name" readonly="1" nolabel="1"/>
                     </button>
 
-                    <!-- Thiếu hàng: Vẫn Xác Nhận + Go to SO -->
                     <button name="action_validate_anyway"
                             type="object"
                             class="btn mc-btn-confirm"
